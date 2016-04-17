@@ -42,7 +42,7 @@ class ProjectProvider implements ServiceProviderInterface
 			return $path;
 		});
 
-		$app['config.load'] = $app->protect(function($path, $flatten = true) use ($app){
+		$app['config.load'] = $app->protect(function($path, $flatten = false) use ($app){
 			$file = $app['config.path.resolve']($path);
 			$data = json_decode(file_get_contents($file), true);
 			$key = preg_replace('/([^a-zA-Z0-9_\-]+)/', '.', $path);

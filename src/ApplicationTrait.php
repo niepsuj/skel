@@ -25,7 +25,7 @@ trait ApplicationTrait
         return $this['view.filter']($name, $callback);
     }
 
-    public function config($name, $flatten = true)
+    public function config($name, $flatten = false)
     {
     	return $this['config.load']($name, $flatten);
     }
