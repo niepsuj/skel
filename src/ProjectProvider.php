@@ -21,7 +21,7 @@ class ProjectProvider implements ServiceProviderInterface
 				throw new \Exception('Invalid config path');
 			}
 
-			$app['config.path.resolve'] = function($path) use ($app){
+			$app['config.path.resolve'] = $app->protect(function($path) use ($app){
 				$base = $app['config.path'].'/'.$path;
 
 				if($app['env'] !== 'production'){
@@ -37,9 +37,9 @@ class ProjectProvider implements ServiceProviderInterface
 				}
 
 				return $path;
-			};
+			});
 
-			$app['config.load'] = function($path) use ($app){
+			$app['config.load'] = $app->protect(function($path) use ($app){
 				$file = $app['config.path.resolve']($path);
 				$data = json_decode(file_get_contents($file), true);
 				$iterator = new \RecursiveArrayIterator($data);
@@ -60,7 +60,11 @@ class ProjectProvider implements ServiceProviderInterface
 
 	            iterator_apply($iterator, $iterate, array($iterator));
 				return $data;
-			};
+			});
+		}else{
+			$app['config.load'] = $app->protect(function($path) {
+				throw new \Exception('Missing config path');
+			});
 		}
 
 		$app['registry'] = $app->factory(function(){

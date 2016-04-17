@@ -25,4 +25,8 @@ trait ApplicationTrait
         return $this['view.filter']($name, $callback);
     }
 
+    public function config($name)
+    {
+    	return $this['config.load']($name);
+    }
 }
