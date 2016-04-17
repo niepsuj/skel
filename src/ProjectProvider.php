@@ -42,26 +42,29 @@ class ProjectProvider implements ServiceProviderInterface
 			return $path;
 		});
 
-		$app['config.load'] = $app->protect(function($path) use ($app){
+		$app['config.load'] = $app->protect(function($path, $flatten = true) use ($app){
 			$file = $app['config.path.resolve']($path);
 			$data = json_decode(file_get_contents($file), true);
-			$iterator = new \RecursiveArrayIterator($data);
-
-			$keys = [preg_replace('/([^a-zA-Z0-9_\-]+)/', '.', $path)];
-			$iterate    = function($iterator) use (&$keys, &$iterate, $app){
-                while( $iterator->valid() ) {
-                    if( $iterator->hasChildren() ) {
-                        array_push($keys, $iterator->key());
-                        $iterate($iterator->getChildren());
-                    }else{
-                        $app[implode('.', $keys).'.'.$iterator->key()] = $iterator->current();
-                    }
-                    $iterator -> next(); 
-                }
-                array_pop($keys);
-            };
-
-            iterator_apply($iterator, $iterate, array($iterator));
+			$key = preg_replace('/([^a-zA-Z0-9_\-]+)/', '.', $path);
+			if($flatten){
+				$iterator = new \RecursiveArrayIterator($data);
+				$keys = [$key];
+				$iterate    = function($iterator) use (&$keys, &$iterate, $app){
+	                while( $iterator->valid() ) {
+	                    if( $iterator->hasChildren() ) {
+	                        array_push($keys, $iterator->key());
+	                        $iterate($iterator->getChildren());
+	                    }else{
+	                        $app[implode('.', $keys).'.'.$iterator->key()] = $iterator->current();
+	                    }
+	                    $iterator -> next(); 
+	                }
+	                array_pop($keys);
+	            };
+	            iterator_apply($iterator, $iterate, array($iterator));	
+			}else{
+				$app[$key] = $data;
+			}
 			return $data;
 		});
 	
