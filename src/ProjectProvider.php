@@ -9,11 +9,14 @@ class ProjectProvider implements ServiceProviderInterface
 {
 	public function register(Container $app)
 	{
-		if(!isset($app['env']) && is_string($app['env'])){
-			$app['env'] = 'production';
-		}
+		$app['env.name'] = 'APPLICATION_ENV';
+		$app['env'] = function() use ($app){
+			return getenv($app['env.name']) ? getenv($app['env.name']) : 'production'; 
+		};
+		$app['debug'] = function() use ($app){
+			return $app['env'] !== 'production';
+		};
 
-		$app['debug'] = $app['env'] !== 'production';		
 		$app['callback_resolver'] = function ($app) { return new Callbacks($app); };
 
 		if(isset($app['config.path'])){
