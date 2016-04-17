@@ -9,7 +9,7 @@ class ProjectProvider implements ServiceProviderInterface
 {
 	public function register(Container $app)
 	{
-		if(!isset($app['env'])){
+		if(!isset($app['env']) && is_string($app['env'])){
 			$app['env'] = 'production';
 		}
 
