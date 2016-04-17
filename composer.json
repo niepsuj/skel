@@ -1,0 +1,11 @@
+{
+	"name": "niepsuj/skel",
+	"description": "silex tools",
+	"autoload": {
+        "psr-4": { "Skel\\": "src", "Skel\\Test\\": "public/src" }
+    },
+	"require-dev":{
+		"silex/silex": "~2.0@dev",
+		"twig/twig": "^1.24"
+	}
+}
