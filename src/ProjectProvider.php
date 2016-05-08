@@ -16,7 +16,11 @@ class ProjectProvider implements ServiceProviderInterface
 		$app['debug'] = function() use ($app){
 			return $app['env'] !== 'production';
 		};
-
+		$app['name'] = function(){
+			$loader = new \ReflectionClass('Composer\Autoload\ClassLoader');
+			$composer = json_decode(file_get_contents(dirname($loader->getFileName()).'/../../composer.json'), true);
+			return $composer['name'];
+		};
 		$app['callback_resolver'] = function ($app) { return new Callbacks($app); };
 
 		$app['config.path.resolve'] = $app->protect(function($path) use ($app){

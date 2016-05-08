@@ -4,8 +4,9 @@
 	"autoload": {
         "psr-4": { "Skel\\": "src", "Skel\\Test\\": "public/src" }
     },
-	"require-dev":{
+	"require": {
 		"silex/silex": "~2.0@dev",
-		"twig/twig": "^1.24"
+		"twig/twig": "^1.24",
+		"symfony/console": "^3.0"
 	}
 }

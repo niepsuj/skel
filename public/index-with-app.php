@@ -9,7 +9,7 @@ $app->register(new Skel\ProjectProvider, 	[ 'env' => getenv('APPLICATION_ENV') ]
 $app->register(new Skel\ViewProvider, 		[ 'view.path' => __DIR__.'/views' ] );
 
 $app->get('/', function() use ($app){
-	return $app->html('index', ['var' => 'value']);
+	return $app->html('index');
 });
 
 $app->run();
