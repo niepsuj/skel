@@ -20,7 +20,7 @@ class ConsoleCommand extends BaseCommand
     /**
      * Wyrażenia regularne parsujące definicję komendy
      */
-    const DEF_BASE = '/^(?<command>\w+){1}(?<input>.*)?$/';
+    const DEF_BASE = '/^(?<command>[\w\-\.]+){1}(?<input>.*)?$/';
     const DEF_ARGS = '/\s+\{(?<arguments>\w+)(?<array>\[\])?\}/';
     const DEF_OPTS = '/\s+(?<value>\-{1,2})(?<options>[\w\-]+(\|\w{1})?)(?<array>\[\])?/';
 
