@@ -5,7 +5,8 @@ namespace Skel;
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
 use Symfony\Component\Console\Application;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\Console\Event\ConsoleCommandEvent;
+use Symfony\Component\Console\Helper\QuestionHelper;
 
 class ConsoleProvider implements ServiceProviderInterface
 {
@@ -28,5 +29,17 @@ class ConsoleProvider implements ServiceProviderInterface
 			$app['console.app']->addCommands($app['controllers']->flushCommands());
 			$app['console.app']->run();
 		});
+
+		$app->on('console.command', function(ConsoleCommandEvent $event) use ($app){
+			$app['console.input']   = $event->getInput();
+			$app['console.output']  = $event->getOutput();
+		});
+
+		$app['console'] = function($app){
+			return new ConsoleHelper(
+				$app['console.input'],
+				$app['console.output']
+			);
+		};
 	}
 } 
