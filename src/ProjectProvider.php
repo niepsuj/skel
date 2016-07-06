@@ -86,8 +86,8 @@ class ProjectProvider implements ServiceProviderInterface
 		});
 	
 
-		$app['registry'] = $app->factory(function(){
-			return new Registry();
+		$app['registry'] = $app->protect(function($data = null){
+			return new Registry($data);
 		});
 
 		$app['trigger'] = $app->protect(function($name, $data = null) use ($app){
