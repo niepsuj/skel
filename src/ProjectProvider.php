@@ -47,28 +47,41 @@ class ProjectProvider implements ServiceProviderInterface
 		});
 
 		$app['config.load'] = $app->protect(function($path, $flatten = false) use ($app){
-			$file = $app['config.path.resolve']($path);
-			$data = json_decode(file_get_contents($file), true);
-			$key = preg_replace('/([^a-zA-Z0-9_\-]+)/', '.', $path);
-			if($flatten){
-				$iterator = new \RecursiveArrayIterator($data);
-				$keys = [$key];
-				$iterate    = function($iterator) use (&$keys, &$iterate, $app){
-	                while( $iterator->valid() ) {
-	                    if( $iterator->hasChildren() ) {
-	                        array_push($keys, $iterator->key());
-	                        $iterate($iterator->getChildren());
-	                    }else{
-	                        $app[implode('.', $keys).'.'.$iterator->key()] = $iterator->current();
-	                    }
-	                    $iterator -> next(); 
-	                }
-	                array_pop($keys);
-	            };
-	            iterator_apply($iterator, $iterate, array($iterator));	
+			$file   = $app['config.path.resolve']($path);
+			$key    = preg_replace('/([^a-zA-Z0-9_\-]+)/', '.', $path);
+			$raw    = file_get_contents($file);
+			$data   = json_decode($raw, true);
+
+			if("[" == $raw{0}){
+				$app[$key] = $app['registry']($data);
+				$app[$key]->setSaveCallback(function($registry) use ($app, $file){
+					file_put_contents(
+						$file,
+						json_encode($registry->flush(), JSON_PRETTY_PRINT)
+					);
+				});
 			}else{
-				$app[$key] = $data;
+				if($flatten){
+					$iterator = new \RecursiveArrayIterator($data);
+					$keys = [$key];
+					$iterate    = function($iterator) use (&$keys, &$iterate, $app){
+						while( $iterator->valid() ) {
+							if( $iterator->hasChildren() ) {
+								array_push($keys, $iterator->key());
+								$iterate($iterator->getChildren());
+							}else{
+								$app[implode('.', $keys).'.'.$iterator->key()] = $iterator->current();
+							}
+							$iterator->next();
+						}
+						array_pop($keys);
+					};
+					iterator_apply($iterator, $iterate, array($iterator));
+				}else{
+					$app[$key] = $data;
+				}
 			}
+
 			return $data;
 		});
 	
