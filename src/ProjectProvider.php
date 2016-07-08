@@ -91,8 +91,7 @@ class ProjectProvider implements ServiceProviderInterface
 		});
 
 		$app['trigger'] = $app->protect(function($name, $data = null) use ($app){
-			if($app->booted)
-            	return $app['dispatcher']->dispatch($name, new Event($data))->getData();
+			return $app['dispatcher']->dispatch($name, new Event($data))->flush();
 		});
 
 		$app->before(function (Request $request) {
