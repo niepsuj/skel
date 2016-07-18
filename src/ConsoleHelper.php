@@ -57,4 +57,11 @@ class ConsoleHelper
     {
         return new ProgressBar($this->output, $count);
     }
+
+    public function bullets($data)
+    {
+        foreach($data as $title => $value){
+            $this->output->writeln('* '.$title.': <info>'.$value.'</info>');
+        }
+    }
 }

@@ -54,6 +54,7 @@ class ConsoleCommand extends BaseCommand
      * 
      * @see  http://symfony.com/doc/current/cookbook/console/console_command.html
      * @param string $definition
+     * @throws \Exception
      */
     public function __construct($definition)
     {
@@ -134,6 +135,7 @@ class ConsoleCommand extends BaseCommand
      * @param string $name 
      * @param string $value
      * @return self
+     * @throws \Exception
      */
     public function value($name, $value)
     {
@@ -222,6 +224,8 @@ class ConsoleCommand extends BaseCommand
      * {self::execute} zamiast odwoływać się do parametru {Symfony\Component\Console\Command\Command::$code}
      * 
      * @param mixed $code Callable
+     * @throws \InvalidArgumentException
+     * @return self
      */
     public function setCode($code)
     {
@@ -238,8 +242,8 @@ class ConsoleCommand extends BaseCommand
      * Metoda uruchamia akcję dopasowując opcję i argumenty z definicji do argumentów funkcji akcji analogicznie jak ma to miejsce w przypadku
      * uruchamiania akcji HTTP
      *
-     * @param Symfony\Component\Console\Output\InputInterface $input
-     * @param Symfony\Component\Console\Output\OutputInterface $output
+     * @param InputInterface $input
+     * @param OutputInterface $output
      * @return mixed
      * @see https://github.com/symfony/symfony/blob/master/src/Symfony/Component/HttpKernel/Controller/ControllerResolver.php
      */
