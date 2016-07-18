@@ -61,7 +61,7 @@ class ConsoleHelper
     public function bullets($data)
     {
         foreach($data as $title => $value){
-            $this->output->writeln('* '.$title.': <info>'.$value.'</info>');
+            $this->output->writeln('  * '.$title.': <info>'.$value.'</info>');
         }
     }
 }
