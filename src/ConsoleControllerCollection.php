@@ -32,7 +32,9 @@ class ConsoleControllerCollection extends ControllerCollection
 		$commands = [];
 		foreach ($this->controllers as $controller) {
             if (!($controller instanceof Controller)) {
-                $commands = array_merge($commands, $controller->flushCommands($controller->prefix));
+				$commands = array_merge($commands, $controller->flushCommands(
+					$prefix.$controller->prefix
+				));
             }
         }
 
