@@ -4,6 +4,7 @@ namespace Skel;
 
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 class ProjectProvider implements ServiceProviderInterface
 {
