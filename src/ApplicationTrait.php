@@ -12,7 +12,7 @@ trait ApplicationTrait
 
 	public function trigger($name, $data = null)
     {
-        return $app['trigger']($name, $data);
+        return $this['trigger']($name, $data);
     }
 
     public function addFunction($name, $callback)

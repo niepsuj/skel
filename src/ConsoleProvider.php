@@ -16,7 +16,7 @@ class ConsoleProvider implements ServiceProviderInterface
 		$app['console.app'] = function($app){
 			$cliApp = new Application($app['name']);
 			$cliApp->setDispatcher($app['dispatcher']);
-			return $cliApp;
+			return $app['trigger']('console.app', ['app' => $cliApp])['app'];
 		};
 
 		$app['command_class'] = 'Skel\\ConsoleCommand';

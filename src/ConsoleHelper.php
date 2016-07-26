@@ -61,6 +61,22 @@ class ConsoleHelper
     public function bullets($data)
     {
         foreach($data as $title => $value){
+            switch(true){
+                case is_bool($value):
+                    if($value){
+                        $value = '<fg=green>TRUE</fg=green>';
+                    }else{
+                        $value = '<fg=red>FALSE</fg=red>';
+                    }
+                    break;
+                case is_string($value):
+                    $value = '<info>'.$value.'</info>';
+                    break;
+                default:
+                    $value = '...';
+                    break;
+            }
+
             $this->output->writeln('  * '.$title.': <info>'.$value.'</info>');
         }
     }
