@@ -44,7 +44,7 @@ class ConsoleHelper
         return $helper->ask($this->input, $this->output, $question);
     }
 
-    public function formatVariable($value, $lenght = 20)
+    public function formatVariable($value, $lenght = 50)
     {
         switch(true){
             case is_bool($value):
@@ -164,10 +164,20 @@ class ConsoleHelper
         return new ProgressBar($this->output, $count);
     }
 
-    public function bullets($data)
+    public function bullets($data, $bullet = '  * ', $json = false)
     {
+        if($json){
+            $this->output->writeln(json_encode($data));
+            return;
+        }
+
         foreach($data as $title => $value){
-            $this->output->writeln('  * '.$title.': <info>'.$this->formatVariable($value).'</info>');
+            if(is_array($value)){
+                $this->output->writeln($bullet.$title.':');
+                $this->bullets($value, '  '.$bullet);
+            }else{
+                $this->output->writeln($bullet.$title.': <info>'.$this->formatVariable($value).'</info>');
+            }
         }
     }
 
