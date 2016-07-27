@@ -164,7 +164,7 @@ class ConsoleHelper
         return new ProgressBar($this->output, $count);
     }
 
-    public function bullets($data, $bullet = '  * ', $json = false)
+    public function bullets($data, $json = false, $bullet = '  * ')
     {
         if($json){
             $this->output->writeln(json_encode($data));
@@ -174,7 +174,7 @@ class ConsoleHelper
         foreach($data as $title => $value){
             if(is_array($value)){
                 $this->output->writeln($bullet.$title.':');
-                $this->bullets($value, '  '.$bullet);
+                $this->bullets($value, false, '  '.$bullet);
             }else{
                 $this->output->writeln($bullet.$title.': <info>'.$this->formatVariable($value).'</info>');
             }
