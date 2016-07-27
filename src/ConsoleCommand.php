@@ -58,72 +58,75 @@ class ConsoleCommand extends BaseCommand
      */
     public function __construct($definition)
     {
-        $matches = array();
+        if(PHP_SAPI === 'cli') {
 
-        // Wyłuskanie nazwy akcji
-        $base = preg_match(self::DEF_BASE, $definition, $matches);
-        if(!isset($matches['command'])) 
-            throw new \Exception('Nieprawidłowa definicja komendy: <command :argument -options|o>');
-        
-        // Konfiguracja klasy Symfony
-        parent::__construct($matches['command']);
-        
-        // Parsowanie pozostałej części definicji
-        if(!empty($matches['input'])){
-            $input = $matches['input'];
-            
-            /**
-             * Parsowanie argumentów
-             */
-            preg_match_all(self::DEF_ARGS, $input, $matches);
-            if(!empty($matches['arguments'])){
-                foreach($matches['arguments'] as $i => $name){
-                    
-                    if($matches['array'][$i] == '[]'){
-                        $mode = InputArgument::REQUIRED | InputArgument::IS_ARRAY;
-                    }else{
-                        $mode = InputArgument::REQUIRED;
+            $matches = [];
+
+            // Wyłuskanie nazwy akcji
+            $base = preg_match(self::DEF_BASE, $definition, $matches);
+            if (!isset($matches['command']))
+                throw new \Exception('Nieprawidłowa definicja komendy: <command :argument -options|o>');
+
+            // Konfiguracja klasy Symfony
+            parent::__construct($matches['command']);
+
+            // Parsowanie pozostałej części definicji
+            if (!empty($matches['input'])) {
+                $input = $matches['input'];
+
+                /**
+                 * Parsowanie argumentów
+                 */
+                preg_match_all(self::DEF_ARGS, $input, $matches);
+                if (!empty($matches['arguments'])) {
+                    foreach ($matches['arguments'] as $i => $name) {
+
+                        if ($matches['array'][$i] == '[]') {
+                            $mode = InputArgument::REQUIRED | InputArgument::IS_ARRAY;
+                        } else {
+                            $mode = InputArgument::REQUIRED;
+                        }
+
+                        $this->definitions[$name] = array(
+                            'mode' => $mode,
+                            'description' => null,
+                            'default' => null
+                        );
                     }
-
-                    $this->definitions[$name] = array(
-                        'mode'          => $mode,
-                        'description'   => null,
-                        'default'       => null
-                    );
                 }
-            }
 
-            /**
-             * Parsowanie opcji
-             */
-            preg_match_all(self::DEF_OPTS, $input, $matches);
-            if(!empty($matches['options'])){
+                /**
+                 * Parsowanie opcji
+                 */
+                preg_match_all(self::DEF_OPTS, $input, $matches);
+                if (!empty($matches['options'])) {
 
-                foreach($matches['options'] as $i => $name){
-                    @list($name, $shortcut) = explode('|', $name);
+                    foreach ($matches['options'] as $i => $name) {
+                        @list($name, $shortcut) = explode('|', $name);
 
-                    if($matches['value'][$i] == '-'){ 
-                        $mode = InputOption::VALUE_NONE;
+                        if ($matches['value'][$i] == '-') {
+                            $mode = InputOption::VALUE_NONE;
 
-                        if(strlen($name) == 1 && null === $shortcut) {
-                            $shortcut = $name;
-                            $name = $name.'-flag';
+                            if (strlen($name) == 1 && null === $shortcut) {
+                                $shortcut = $name;
+                                $name = $name . '-flag';
+                            }
+
+                        } else {
+                            if ($matches['array'][$i] == '[]') {
+                                $mode = InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY;
+                            } else {
+                                $mode = InputOption::VALUE_REQUIRED;
+                            }
                         }
 
-                    }else{
-                        if($matches['array'][$i] == '[]'){ 
-                            $mode = InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY;
-                        }else{
-                            $mode = InputOption::VALUE_REQUIRED;
-                        }
+                        $this->definitions[$name] = array(
+                            'mode' => $mode,
+                            'shortcut' => $shortcut,
+                            'description' => null,
+                            'default' => null
+                        );
                     }
-
-                    $this->definitions[$name] = array(
-                        'mode'          => $mode,
-                        'shortcut'      => $shortcut,
-                        'description'   => null,
-                        'default'       => null
-                    );
                 }
             }
         }
@@ -139,11 +142,13 @@ class ConsoleCommand extends BaseCommand
      */
     public function value($name, $value)
     {
-        if(!isset($this->definitions[$name]))
-            throw new \Exception('Invalud argument or option name: '.$name);
+        if(PHP_SAPI === 'cli'){
+            if(!isset($this->definitions[$name]))
+                throw new \Exception('Invalud argument or option name: '.$name);
 
-        $this->definitions[$name]['default'] = $value;
-        $this->definitions[$name]['mode'] = $this->updateModeOptional($name);
+            $this->definitions[$name]['default'] = $value;
+            $this->definitions[$name]['mode'] = $this->updateModeOptional($name);
+        }
 
         return $this;
     }
@@ -157,8 +162,10 @@ class ConsoleCommand extends BaseCommand
      */
     public function info($name, $value)
     {
-        if(isset($this->definitions[$name])){
-            $this->definitions[$name]['description'] = (string) $value;
+        if(PHP_SAPI === 'cli') {
+            if (isset($this->definitions[$name])) {
+                $this->definitions[$name]['description'] = (string)$value;
+            }
         }
 
         return $this;
@@ -172,7 +179,11 @@ class ConsoleCommand extends BaseCommand
      */
     public function help($value)
     {
-        return $this->setHelp($value);
+        if(PHP_SAPI === 'cli'){
+            $this->setHelp($value);
+        }
+
+        return $this;
     }
 
     /**
@@ -183,7 +194,11 @@ class ConsoleCommand extends BaseCommand
      */
     public function description($value)
     {
-        return $this->setDescription($value);
+        if(PHP_SAPI === 'cli'){
+            $this->setDescription($value);
+        }
+
+        return $this;
     }
 
     /**
@@ -195,8 +210,10 @@ class ConsoleCommand extends BaseCommand
      */
     public function addPrefix($prefix)
     {
-        if(!empty($prefix))
-            $this->setName(trim($prefix,'/').':'.$this->getName());
+        if(PHP_SAPI === 'cli'){
+            if(!empty($prefix))
+                $this->setName(trim($prefix,'/').':'.$this->getName());
+        }
 
         return $this;
     }
@@ -208,11 +225,13 @@ class ConsoleCommand extends BaseCommand
      */
     public function boot()
     {
-        foreach($this->definitions as $name => $definition){
-            if(array_key_exists('shortcut', $definition)){
-                $this->addOption($name, $definition['shortcut'], $definition['mode'], $definition['description'], $definition['default']);
-            }else{
-                $this->addArgument($name, $definition['mode'], $definition['description'], $definition['default']);
+        if(PHP_SAPI === 'cli'){
+            foreach($this->definitions as $name => $definition){
+                if(array_key_exists('shortcut', $definition)){
+                    $this->addOption($name, $definition['shortcut'], $definition['mode'], $definition['description'], $definition['default']);
+                }else{
+                    $this->addArgument($name, $definition['mode'], $definition['description'], $definition['default']);
+                }
             }
         }
 
@@ -229,11 +248,13 @@ class ConsoleCommand extends BaseCommand
      */
     public function setCode($code)
     {
-        if (!is_callable($code)) {
-            throw new \InvalidArgumentException('Invalid callable provided to Command::setCode.');
-        }
+        if(PHP_SAPI === 'cli'){
+            if (!is_callable($code)) {
+                throw new \InvalidArgumentException('Invalid callable provided to Command::setCode.');
+            }
 
-        $this->_code = $code;
+            $this->_code = $code;
+        }
 
         return $this;
     }

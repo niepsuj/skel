@@ -2,6 +2,7 @@
 
 namespace Skel;
 
+use Symfony\Component\Console\Helper\FormatterHelper;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Helper\Table;
@@ -43,14 +44,119 @@ class ConsoleHelper
         return $helper->ask($this->input, $this->output, $question);
     }
 
-    public function table(array $header = [])
+    public function formatVariable($value, $lenght = 20)
     {
-        $table = new Table($this->output);
-        if(!empty($header)){
-            $table->setHeaders($header);
+        switch(true){
+            case is_bool($value):
+                if($value){
+                    return '<fg=green>TRUE</fg=green>';
+                }
+
+                return '<fg=red>FALSE</fg=red>';
+
+            case is_numeric($value):
+                return (string) $value;
+
+            case is_string($value):
+                $format = new FormatterHelper();
+                return $format->truncate($value, $lenght);
+
+            case is_array($value):
+                return $this->formatVariable(implode(',', $value), $lenght);
+
+            case is_object($value):
+                return $this->formatVariable(json_encode($value), $lenght);
+
+            case is_null($value):
+                return '<fg=red>-</fg=red>';
         }
 
-        return $table;
+        return '-';
+    }
+
+    public function formatListVariable($value, $styles = null)
+    {
+        if(null === $styles){
+            return $value;
+        }
+
+        if(!isset($styles[$value])){
+            return $value;
+        }
+
+        return '<fg='.$styles[$value].'>'.$this->formatVariable($value).'</fg='.$styles[$value].'>';
+    }
+
+    public function table(array $header = [], $data = null, $json = false)
+    {
+        if($json){
+            $this->output->writeln(json_encode($data));
+            return;
+        }
+
+        $table = new Table($this->output);
+        $filters = [];
+        if(!empty($header)){
+            $table->setHeaders(
+                array_map(function($header, $key) use (&$filters){
+                    $filters[$key] = [$this, 'formatVariable'];
+
+                    if(is_array($header)){
+                        if(isset($header['filter'])){
+                            if(is_callable($header['filter'])){
+                                $filters[$key] = $header['filter'];
+                            }elseif(is_array($header['filter'])){
+                                $callback = [$this, 'formatListVariable'];
+                                $styles = $header['filter'];
+                                $filters[$key] = function($value) use ($callback, $styles){
+                                    return call_user_func($callback, $value, $styles);
+                                };
+                            }
+                        }
+
+                        if(isset($header['label'])){
+                            return $header['label'];
+                        }
+                    }elseif(is_string($header)){
+                        return $header;
+                    }
+
+                    return ucfirst($key);
+                }, array_values($header), array_keys($header))
+            );
+        }
+
+        if(null === $data){
+            return $table;
+        }
+
+        foreach($data as $item){
+            if(is_array($item)){
+                $row = [];
+                $i = 0;
+                foreach($filters as $key => $value){
+                    switch(true){
+                        case isset($item[$key]):
+                            $row[] = $value($item[$key]);
+                            break;
+                        case isset($item[$i]):
+                            $row[] = $value($item[$i]);
+                            break;
+                        default:
+                            $row[] = '-';
+                            break;
+                    }
+
+                    $i++;
+                }
+
+                $table->addRow($row);
+            }else{
+                $table->addRow([$item]);
+            }
+        }
+
+        $table->render();
     }
 
     public function progress($count)
@@ -61,23 +167,24 @@ class ConsoleHelper
     public function bullets($data)
     {
         foreach($data as $title => $value){
-            switch(true){
-                case is_bool($value):
-                    if($value){
-                        $value = '<fg=green>TRUE</fg=green>';
-                    }else{
-                        $value = '<fg=red>FALSE</fg=red>';
-                    }
-                    break;
-                case is_string($value):
-                    $value = '<info>'.$value.'</info>';
-                    break;
-                default:
-                    $value = '...';
-                    break;
-            }
-
-            $this->output->writeln('  * '.$title.': <info>'.$value.'</info>');
+            $this->output->writeln('  * '.$title.': <info>'.$this->formatVariable($value).'</info>');
         }
+    }
+
+    public function text($template, $data, $json = false)
+    {
+        if($json){
+            $this->output->writeln(json_encode($data));
+            return;
+        }
+
+        $this->output->writeln(
+            preg_replace_callback('/:(\w+)/', function($matches) use (&$data) {
+                if(isset($data[$matches[1]])){
+                    return $data[$matches[1]];
+                }
+                return $matches[0];
+            }, $template)
+        );
     }
 }
