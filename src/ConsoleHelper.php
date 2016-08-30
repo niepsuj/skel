@@ -44,7 +44,7 @@ class ConsoleHelper
         return $helper->ask($this->input, $this->output, $question);
     }
 
-    public function formatVariable($value, $lenght = 50)
+    public function formatVariable($value, $length = 50)
     {
         switch(true){
             case is_bool($value):
@@ -59,13 +59,13 @@ class ConsoleHelper
 
             case is_string($value):
                 $format = new FormatterHelper();
-                return $format->truncate($value, $lenght);
+                return $format->truncate($value, $length);
 
             case is_array($value):
-                return $this->formatVariable(implode(',', $value), $lenght);
+                return $this->formatVariable(implode(',', $value), $length);
 
             case is_object($value):
-                return $this->formatVariable(json_encode($value), $lenght);
+                return $this->formatVariable(json_encode($value), $length);
 
             case is_null($value):
                 return '<fg=red>-</fg=red>';
@@ -114,6 +114,22 @@ class ConsoleHelper
                             }
                         }
 
+                        if(isset($header['map'])){
+                            if(is_callable($header['map'])){
+                                $mapCallback = $header['map'];
+                                if(isset($filters[$key]) && is_callable($filters[$key])){
+                                    $filterCallback = $filters[$key];
+                                    $filters[$key] = function($item) use ($mapCallback, $filterCallback){
+                                        return call_user_func($filterCallback,
+                                            call_user_func($mapCallback, $item)
+                                        );
+                                    };
+                                }else{
+                                    $filters[$key] = $mapCallback;
+                                }
+                            }
+                        }
+
                         if(isset($header['label'])){
                             return $header['label'];
                         }
@@ -136,14 +152,14 @@ class ConsoleHelper
                 $i = 0;
                 foreach($filters as $key => $value){
                     switch(true){
-                        case isset($item[$key]):
+                        case array_key_exists($key, $item):
                             $row[] = $value($item[$key]);
                             break;
-                        case isset($item[$i]):
+                        case array_key_exists($i, $item):
                             $row[] = $value($item[$i]);
                             break;
                         default:
-                            $row[] = '-';
+                            $row[] = $value($item);
                             break;
                     }
 
@@ -176,7 +192,7 @@ class ConsoleHelper
                 $this->output->writeln($bullet.$title.':');
                 $this->bullets($value, false, '  '.$bullet);
             }else{
-                $this->output->writeln($bullet.$title.': <info>'.$this->formatVariable($value).'</info>');
+                $this->output->writeln($bullet.$title.': <info>'.$this->formatVariable($value, 1000).'</info>');
             }
         }
     }
@@ -191,10 +207,22 @@ class ConsoleHelper
         $this->output->writeln(
             preg_replace_callback('/:(\w+)/', function($matches) use (&$data) {
                 if(isset($data[$matches[1]])){
-                    return $data[$matches[1]];
+                    return $this->formatVariable($data[$matches[1]]);
                 }
                 return $matches[0];
             }, $template)
+        );
+    }
+
+    public function error($message, $json = false)
+    {
+        if($json){
+            $this->output->writeln(json_encode(['error' => true, 'message' => $message]));
+        }
+
+        $format = new FormatterHelper();
+        $this->output->writeln(
+            $format->formatBlock($message, 'error')
         );
     }
 }
