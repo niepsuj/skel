@@ -4,29 +4,16 @@ namespace Skel;
 
 class Registry implements \IteratorAggregate, \ArrayAccess, \Countable
 {
+    use SaveableTrait;
+
     protected $registry = array();
     protected $pos = 0;
-    protected $saveCallback = null;
 
     public function __construct($data = null)
     {
         if (null === $data) return;
         if (is_array($data)) $this->registry = $data;
         else $this->push($data);
-    }
-
-    public function setSaveCallback(callable $save)
-    {
-        $this->saveCallback = $save;
-    }
-
-    public function save()
-    {
-        if(null === $this->saveCallback){
-            throw new \Exception('Missing save callback');
-        }
-
-        return call_user_func($this->saveCallback, $this);
     }
 
     public function push($value)

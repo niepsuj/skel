@@ -14,6 +14,7 @@ trait ConsoleApplicationTrait
     public function run(Request $req = null)
     {
         if($this['console.env']){
+            $this->boot();
        		return $this['console.run']();
         }
 

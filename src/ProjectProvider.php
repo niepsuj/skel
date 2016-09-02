@@ -79,7 +79,13 @@ class ProjectProvider implements ServiceProviderInterface
 					};
 					iterator_apply($iterator, $iterate, array($iterator));
 				}else{
-					$app[$key] = $data;
+					$app[$key] = $app['config']($data);
+					$app[$key]->setSaveCallback(function($config) use ($app, $file){
+						file_put_contents(
+							$file,
+							json_encode($config->flush(), JSON_PRETTY_PRINT)
+						);
+					});
 				}
 			}
 
@@ -89,6 +95,10 @@ class ProjectProvider implements ServiceProviderInterface
 
 		$app['registry'] = $app->protect(function($data = null){
 			return new Registry($data);
+		});
+
+		$app['config'] = $app->protect(function($data = null){
+			return new ConfigRoot($data);
 		});
 
 		$app['trigger'] = $app->protect(function($name, $data = null) use ($app){
