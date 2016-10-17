@@ -47,7 +47,7 @@ class ProjectProvider implements ServiceProviderInterface
 			return $path;
 		});
 
-		$app['config.load'] = $app->protect(function($path, $flatten = false) use ($app){
+		$app['config.load'] = $app->protect(function($path, $flatten = false, $saveable = false) use ($app){
 			$file   = $app['config.path.resolve']($path);
 			$key    = preg_replace('/([^a-zA-Z0-9_\-]+)/', '.', $path);
 			$raw    = file_get_contents($file);
@@ -79,13 +79,17 @@ class ProjectProvider implements ServiceProviderInterface
 					};
 					iterator_apply($iterator, $iterate, array($iterator));
 				}else{
-					$app[$key] = $app['config']($data);
-					$app[$key]->setSaveCallback(function($config) use ($app, $file){
-						file_put_contents(
-							$file,
-							json_encode($config->flush(), JSON_PRETTY_PRINT)
-						);
-					});
+					if($saveable){
+						$app[$key] = $app['config']($data);
+						$app[$key]->setSaveCallback(function($config) use ($app, $file){
+							file_put_contents(
+								$file,
+								json_encode($config->flush(), JSON_PRETTY_PRINT)
+							);
+						});	
+					}else{
+						$app[$key] = $data;
+					}
 				}
 			}
 
