@@ -22,7 +22,7 @@ class ViewProvider extends TwigServiceProvider implements BootableProviderInterf
     {
         parent::register($app);
         
-        $app['twig.path'] = $app['registry'];
+        $app['twig.path'] = $app['registry']();
         $app['twig.loader.filesystem'] = function ($app) {
         	if(isset($app['view.path'])){
         		$app['twig.path']->push($app['view.path']);
