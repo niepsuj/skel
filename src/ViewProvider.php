@@ -45,13 +45,13 @@ class ViewProvider extends TwigServiceProvider implements BootableProviderInterf
             return $res;
         });
 
-        $app['view.function.registry'] = $app['registry'];
+        $app['view.function.registry'] = $app['registry']();
         $app['view.function'] = $app->protect(function($name, $callback) use ($app){
             $app['view.function.registry']->push(new Twig_SimpleFunction($name, $app['callback_resolver']->resolveCallback($callback)));
             return $app;
         });
 
-        $app['view.filter.registry'] = $app['registry'];
+        $app['view.filter.registry'] = $app['registry']();
         $app['view.filter'] = $app->protect(function($name, $callback) use ($app){
             $app['view.filter.registry']->push(new Twig_SimpleFilter($name, $app['callback_resolver']->resolveCallback($callback)));
             return $app;
