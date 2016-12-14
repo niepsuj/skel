@@ -7,6 +7,7 @@ use Pimple\ServiceProviderInterface;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\Console\Helper\QuestionHelper;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class ConsoleProvider implements ServiceProviderInterface
 {
@@ -16,7 +17,8 @@ class ConsoleProvider implements ServiceProviderInterface
 		$app['console.app'] = function($app){
 			$cliApp = new Application($app['name']);
 			$cliApp->setDispatcher($app['dispatcher']);
-			return $app['trigger']('console.app', ['app' => $cliApp])['app'];
+			$app['dispatcher']->dispatch('console.app', new Event(['app' => $cliApp]));
+            return $cliApp;
 		};
 
 		$app['command_class'] = 'Skel\\ConsoleCommand';

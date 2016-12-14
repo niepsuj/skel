@@ -14,9 +14,11 @@ class ProjectProvider implements ServiceProviderInterface
 		$app['env'] = function() use ($app){
 			return getenv($app['env.name']) ? getenv($app['env.name']) : 'production'; 
 		};
+
 		$app['debug'] = function() use ($app){
 			return $app['env'] !== 'production';
 		};
+
 		$app['name'] = function(){
 			$loader = new \ReflectionClass('Composer\Autoload\ClassLoader');
 			$composer = json_decode(file_get_contents(dirname($loader->getFileName()).'/../../composer.json'), true);
@@ -103,10 +105,6 @@ class ProjectProvider implements ServiceProviderInterface
 
 		$app['config'] = $app->protect(function($data = null){
 			return new ConfigRoot($data);
-		});
-
-		$app['trigger'] = $app->protect(function($name, $data = null) use ($app){
-			return $app['dispatcher']->dispatch($name, new Event($data))->flush();
 		});
 
 		$app->before(function (Request $request) {

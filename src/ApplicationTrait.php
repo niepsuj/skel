@@ -2,7 +2,9 @@
 
 namespace Skel;
 
-trait ApplicationTrait 
+use Symfony\Component\EventDispatcher\Event as DispatcherEvent;
+
+trait ApplicationTrait
 {
 
 	public function html($template, $data = null)
@@ -12,7 +14,11 @@ trait ApplicationTrait
 
 	public function trigger($name, $data = null)
     {
-        return $this['trigger']($name, $data);
+        if(!$data instanceof DispatcherEvent){
+            $data = new Event($data);
+        }
+
+        return $this['dispatcher']->dispatch($name, $data);
     }
 
     public function addFunction($name, $callback)
