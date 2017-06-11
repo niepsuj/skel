@@ -1,6 +1,6 @@
 <?php
 
-namespace Skel;
+namespace Skel\Project;
 
 trait StoreTrait 
 {
@@ -15,6 +15,7 @@ trait StoreTrait
     public function get($name)                  { return $this->store[$name];                          	}
     public function exists($name)               { return isset($this->store[$name]);         			}
     public function clean($name)                { unset($this->store[$name]); 		return $this;  		}
+    public function getIterator()               { return new \ArrayIterator($this->store);              }
 
     public function merge($values = array())    {
         if(is_array($values))
@@ -22,5 +23,5 @@ trait StoreTrait
         return $this; 
     }
     
-    public function flush()                     { return $this->store;                       			}
+    public function store()                     { return $this->store;                       			}
 }

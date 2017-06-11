@@ -246,13 +246,9 @@ class ConsoleCommand extends BaseCommand
      * @throws \InvalidArgumentException
      * @return self
      */
-    public function setCode($code)
+    public function setCode(callable $code)
     {
         if(PHP_SAPI === 'cli'){
-            if (!is_callable($code)) {
-                throw new \InvalidArgumentException('Invalid callable provided to Command::setCode.');
-            }
-
             $this->_code = $code;
         }
 

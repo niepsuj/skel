@@ -4,108 +4,120 @@ namespace Skel;
 
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
+use Skel\Project\Callbacks;
+use Skel\Project\Registry;
+use Skel\Project\Store;
 use Symfony\Component\HttpFoundation\Request;
 
 class ProjectProvider implements ServiceProviderInterface
 {
 	public function register(Container $app)
 	{
-		$app['env.name'] = 'APPLICATION_ENV';
-		$app['env'] = function() use ($app){
-			return getenv($app['env.name']) ? getenv($app['env.name']) : 'production'; 
+	    if(!isset($app['env.name'])){
+            $app['env.name'] = 'APPLICATION_ENV';
+        }
+
+		if(!isset($app['env'])){
+            $app['env'] = function($app){
+                return getenv($app['env.name']) ? getenv($app['env.name']) : 'production';
+            };
+        }
+
+        $app['debug'] = function($app){
+            return $app['env'] !== 'production';
+        };
+
+		if(!isset($app['root.path'])){
+            $app['root.path'] = function(){
+                $loader = new \ReflectionClass('Composer\Autoload\ClassLoader');
+                return realpath(dirname($loader->getFileName()) . '/../../');
+            };
+        }
+
+        if(!isset($app['tmp.path'])){
+            $app['tmp.path'] = function($app){
+                return $app['root.path'] . '/tmp';
+            };
+        }
+
+        if(!isset($app['src.path'])){
+            $app['src.path'] = function($app){
+                return $app['root.path'] . '/src';
+            };
+        }
+
+        if(!isset($app['vendor.path'])){
+            $app['vendor.path'] = function($app){
+                return $app['root.path'] . '/vendor';
+            };
+        }
+
+        if(!isset($app['log.path'])){
+            $app['log.path'] = function($app){
+                return $app['root.path'] . '/log';
+            };
+        }
+
+        if(!isset($app['public.path'])){
+            $app['public.path'] = function($app){
+                return $app['root.path'] . '/public';
+            };
+        }
+
+		$app['composer'] = function($app){
+		    return json_decode(
+                file_get_contents(
+                    $app['root.path'].'/composer.json'
+                ), true
+            );
+        };
+
+		$app['name'] = function($app){
+			return
+                preg_replace(
+                    '/\.+/',
+                    '.',
+                    preg_replace(
+                        '/[^a-z0-9_\.]+/',
+                        '.',
+                        strtolower(
+                            $app['composer']['name']
+                        )
+                    )
+                );
 		};
 
-		$app['debug'] = function() use ($app){
-			return $app['env'] !== 'production';
-		};
+		$app['version'] = function($app){
+		    $version =
+                isset($app['composer']['version']) ?
+                    $app['composer']['version'] : '0';
 
-		$app['name'] = function(){
-			$loader = new \ReflectionClass('Composer\Autoload\ClassLoader');
-			$composer = json_decode(file_get_contents(dirname($loader->getFileName()).'/../../composer.json'), true);
-			return $composer['name'];
-		};
-		$app['callback_resolver'] = function ($app) { return new Callbacks($app); };
+		    if(file_exists($app['root.path'].'/.git/HEAD')){
+                $head = str_replace(
+                    'ref: ',
+                    '',
+                    file_get_contents(
+                        $app['root.path'].'/.git/HEAD'
+                    )
+                );
 
-		$app['config.path.resolve'] = $app->protect(function($path) use ($app){
+                $headFile = $app['root.path'].'.git/'.$head;
+                $version .= '.'.file_get_contents( $headFile );
+            }
+            return $version;
+        };
 
-			if(!isset($app['config.path'])){
-				throw new \Exception('Missing config path');
-			}
-
-			$base = $app['config.path'].'/'.$path;
-
-			if($app['env'] !== 'production'){
-				$path = $base.'.'.$app['env'].'.json';
-				if(file_exists($path)){
-					return $path;
-				}
-			}
-
-			$path = $base.'.json';
-			if(!file_exists($path)){
-				throw new \Exception('Invalid config file: '.$path);
-			}
-
-			return $path;
+		$app['registry'] = $app->factory(function(){
+			return new Registry();
 		});
 
-		$app['config.load'] = $app->protect(function($path, $flatten = false, $saveable = false) use ($app){
-			$file   = $app['config.path.resolve']($path);
-			$key    = preg_replace('/([^a-zA-Z0-9_\-]+)/', '.', $path);
-			$raw    = file_get_contents($file);
-			$data   = json_decode($raw, true);
+		$app['store'] = $app->factory(function(){
+		    return new Store();
+        });
 
-			if("[" == $raw{0}){
-				$app[$key] = $app['registry']($data);
-				$app[$key]->setSaveCallback(function($registry) use ($app, $file){
-					file_put_contents(
-						$file,
-						json_encode($registry->flush(), JSON_PRETTY_PRINT)
-					);
-				});
-			}else{
-				if($flatten){
-					$iterator = new \RecursiveArrayIterator($data);
-					$keys = [$key];
-					$iterate    = function($iterator) use (&$keys, &$iterate, $app){
-						while( $iterator->valid() ) {
-							if( $iterator->hasChildren() ) {
-								array_push($keys, $iterator->key());
-								$iterate($iterator->getChildren());
-							}else{
-								$app[implode('.', $keys).'.'.$iterator->key()] = $iterator->current();
-							}
-							$iterator->next();
-						}
-						array_pop($keys);
-					};
-					iterator_apply($iterator, $iterate, array($iterator));
-				}else{
-					if($saveable){
-						$app[$key] = $app['config']($data);
-						$app[$key]->setSaveCallback(function($config) use ($app, $file){
-							file_put_contents(
-								$file,
-								json_encode($config->flush(), JSON_PRETTY_PRINT)
-							);
-						});	
-					}else{
-						$app[$key] = $data;
-					}
-				}
-			}
-
-			return $data;
-		});
-	
-
-		$app['registry'] = $app->protect(function($data = null){
-			return new Registry($data);
-		});
-
-		$app['config'] = $app->protect(function($data = null){
-			return new ConfigRoot($data);
-		});
+		$app['cleanup.scope'] = function(){
+		    return new \ArrayObject();
+        };
 
 		$app->before(function (Request $request) {
 			if (0 === strpos($request->headers->get('Content-Type'), 'application/json')) {

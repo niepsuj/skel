@@ -1,6 +1,6 @@
 <?php
 
-namespace Skel;
+namespace Skel\View;
 
 use Silex\Application 	as SilexApplication;
 use Twig_Token          as Token;
@@ -9,7 +9,7 @@ use Twig_TokenStream    as Stream;
 use Twig_Error_Syntax   as ErrorSyntax;
 use Twig_TokenParser    as Parser;
 
-class ViewEnvTokenParser extends Parser
+class EnvTokenParser extends Parser
 {
 
     protected $app;

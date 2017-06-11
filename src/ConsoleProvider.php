@@ -17,7 +17,7 @@ class ConsoleProvider implements ServiceProviderInterface
 		$app['console.app'] = function($app){
 			$cliApp = new Application($app['name']);
 			$cliApp->setDispatcher($app['dispatcher']);
-			$app['dispatcher']->dispatch('console.app', new Event(['app' => $cliApp]));
+			$app['dispatcher']->dispatch('console.app', new ProjectEvents(['app' => $cliApp]));
             return $cliApp;
 		};
 

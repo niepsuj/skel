@@ -16,7 +16,7 @@ class MongoProvider implements ServiceProviderInterface{
 
         $app['db'] = function($app){
             $db = $app['db.server']->selectDatabase($app['mongo.db']);
-            $app['dispatcher']->dispatch('db.connected', new Event(['db' => $db]));
+            $app['dispatcher']->dispatch('db.connected', new ProjectEvents(['db' => $db]));
             return $db;
         };
     }

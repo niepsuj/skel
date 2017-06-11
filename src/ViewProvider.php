@@ -8,12 +8,13 @@ use Silex\Provider\TwigServiceProvider;
 use Silex\Api\BootableProviderInterface;
 use Silex\Application;
 
+use Skel\Event\CleanupEvent;
+use Skel\Response\ViewResponse;
+use Skel\View\EnvTokenParser;
+use Skel\View\Service;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 
-use Twig_SimpleFunction;
-use Twig_SimpleFilter;
-use Twig_Loader_Filesystem;
 
 class ViewProvider extends TwigServiceProvider implements BootableProviderInterface
 {
@@ -21,54 +22,99 @@ class ViewProvider extends TwigServiceProvider implements BootableProviderInterf
     public function register(Container $app)
     {
         parent::register($app);
-        
-        $app['twig.path'] = $app['registry']();
-        $app['twig.loader.filesystem'] = function ($app) {
-        	if(isset($app['view.path'])){
-        		$app['twig.path']->push($app['view.path']);
-        	}
-            return new Twig_Loader_Filesystem($app['twig.path']->flush());
-        };
-        $app->on(KernelEvents::RESPONSE, 'view.render', 192);
 
-        /**
-         * View renderer
-         */
-        $app['view.render'] = $app->protect(function(FilterResponseEvent $event) use ($app){
-            $res = $event->getResponse();
-            if($res instanceof ViewResponse){
-                $res->setContent(
-                    $app['twig']->render( $res->getView().'.twig', $res->flush() )
+        if(!isset($app['view.path'])){
+            $app['view.path'] = function($app){
+                return $app['root.path'].'/view';
+            };
+        }
+
+        $app['twig.path'] = function($app){
+            return new \ArrayObject([$app['view.path']]);
+        };
+
+        $app['twig.loader.filesystem'] = function ($app) {
+            return new \Twig_Loader_Filesystem(
+                (array) $app['twig.path']
+            );
+        };
+
+        $app['view.function']   = function(){
+            return new \ArrayObject([]);
+        };
+
+        $app['view.filter']     = function(){
+            return new \ArrayObject([]);
+        };
+
+        $app['twig.cache.path'] = function($app){
+            if(isset($app['tmp.path'])){
+                $dir = $app['tmp.path'] . '/view';
+            }else{
+                $dir = $app['view.path'] . '/tmp';
+            }
+
+            if(!file_exists($dir)){
+                mkdir($dir);
+            }
+
+            return $dir;
+        };
+
+        $app['view'] = function($app){
+            $app['twig.options'] = [
+                'cache' => $app['twig.cache.path']
+            ];
+
+            return new Service($app['twig']);
+        };
+
+        /** @var Application $app */
+        $app->on(KernelEvents::RESPONSE, function(FilterResponseEvent $responseEvent) use ($app){
+            $response = $responseEvent->getResponse();
+            if($response instanceof ViewResponse){
+                $response->setContent(
+                    $app['view']->render($response)
                 );
             }
 
-            return $res;
-        });
+            return $response;
+        }, 192);
 
-        $app['view.function.registry'] = $app['registry']();
-        $app['view.function'] = $app->protect(function($name, $callback) use ($app){
-            $app['view.function.registry']->push(new Twig_SimpleFunction($name, $app['callback_resolver']->resolveCallback($callback)));
-            return $app;
-        });
+        if(isset($app['cleanup.scope'])){
+            $app['cleanup.scope'][] = 'view';
 
-        $app['view.filter.registry'] = $app['registry']();
-        $app['view.filter'] = $app->protect(function($name, $callback) use ($app){
-            $app['view.filter.registry']->push(new Twig_SimpleFilter($name, $app['callback_resolver']->resolveCallback($callback)));
-            return $app;
-        });
-
-        $app['view'] = $app->protect(function($name, $data = null){
-        	$res = new ViewResponse($name);
-	        $res->merge($data);
-	        return $res;
-        });
+            $app->on(ProjectEvents::CLEANUP, function(CleanupEvent $cleanupEvent) use ($app){
+                if($cleanupEvent->can('view')){
+                    $cleanupEvent->report(
+                        'view',
+                        $app['view']->cleanup()
+                    );
+                }
+            });
+        }
     }
 
     public function boot(Application $app)
     {
-        foreach($app['view.function.registry']  as $function)   $app['twig']->addFunction($function);
-        foreach($app['view.filter.registry']    as $filter)     $app['twig']->addFilter($filter);
+        foreach($app['view.function']  as $name => $function) {
+            $app['twig']->addFunction(
+                new \Twig_SimpleFunction(
+                    $name,
+                    $app['callback_resolver']->resolveCallback($function)
+                )
+            );
+        }
 
-        $app['twig']->addTokenParser(new ViewEnvTokenParser($app));
+        foreach($app['view.filter']    as $name => $filter) {
+            $app['twig']->addFilter(
+                new \Twig_SimpleFilter(
+                    $name,
+                    $app['callback_resolver']->resolveCallback($filter)
+                )
+            );
+        }
+
+        $app['twig']->addTokenParser(new EnvTokenParser($app));
     }
 }

@@ -1,7 +1,8 @@
 <?php
 
-namespace Skel;
+namespace Skel\Response;
 
+use Skel\Project\StoreTrait;
 use Symfony\Component\HttpFoundation\Response as BaseResponse;
 
 class ViewResponse extends BaseResponse implements \ArrayAccess

@@ -1,10 +1,11 @@
 <?php
 
-namespace Skel;
+namespace Skel\Event;
 
+use Skel\Project\StoreTrait;
 use Symfony\Component\EventDispatcher\Event as BaseEvent;
 
-class Event extends BaseEvent implements \ArrayAccess
+class GenericEvent extends BaseEvent implements \ArrayAccess
 {
 	use StoreTrait;
 
