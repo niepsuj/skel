@@ -101,7 +101,7 @@ class ProjectProvider implements ServiceProviderInterface
                     )
                 );
 
-                $headFile = $app['root.path'].'.git/'.$head;
+                $headFile = $app['root.path'].'/.git/'.trim($head);
                 $version .= '.'.file_get_contents( $headFile );
             }
             return $version;

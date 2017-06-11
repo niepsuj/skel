@@ -63,14 +63,16 @@ class ConsoleProvider implements ServiceProviderInterface, BootableProviderInter
                 $app['console']->setOutput($event->getOutput());
             });
 
-            $app['controllers']->command('cleanup {scope[]}', function($scope) use ($app){
-                $app['dispatcher']->dispatch(
-                    ProjectEvents::CLEANUP,
-                    new CleanupEvent($scope)
-                );
-            })
-                ->description('Clear temporary files')
-                ->help('Available scopes: ', implode(',', (array) $app['cleanup.scope']));
+            if(isset($app['cleanup.scope'])) {
+                $app['controllers']->command('cleanup {scope[]}', function ($scope) use ($app) {
+                    $app['dispatcher']->dispatch(
+                        ProjectEvents::CLEANUP,
+                        new CleanupEvent($scope)
+                    );
+                })
+                    ->description('Clear temporary files')
+                    ->help('Available scopes: ' . implode(',', (array) $app['cleanup.scope']));
+            }
         }
     }
 }
