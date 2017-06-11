@@ -1,30 +1,30 @@
 <?php
 
-namespace Skel;
+namespace Skel\Console;
 
 use Silex\Controller;
-use Silex\ControllerCollection;
+use Silex\ControllerCollection as SilexControllerCollection;
 use Silex\Route;
+use Symfony\Component\Routing\RouteCollection;
 
-class ConsoleControllerCollection extends ControllerCollection
+class ControllerCollection extends SilexControllerCollection
 {
-	protected $commands = [];
-	protected $commandClass = '';
 
-	public function __construct(Route $defaultRoute, $routesFactory = null, $commandClass)
-    {
+	protected $commands = [];
+	protected $commandFactory;
+
+	public function __construct(
+	    Route $defaultRoute,
+        RouteCollection $routesFactory = null,
+        callable $commandFactory = null
+    ){
     	parent::__construct($defaultRoute, $routesFactory);
-    	$this->commandClass = $commandClass;
+    	$this->commandFactory = $commandFactory;
     }
 
 	public function command($definition, $action)
 	{
-		$commandClass = $this->commandClass;
-		if(PHP_SAPI !== 'cli'){
-			return new $commandClass('nocli');
-		}
-
-		$command = new $commandClass($definition);
+		$command = call_user_func($this->commandFactory, $definition);
 		$command->setCode($action);
 		$this->commands[] = $command;
 
@@ -34,10 +34,6 @@ class ConsoleControllerCollection extends ControllerCollection
 	public function flushCommands($prefix = '')
 	{
 		$commands = [];
-		if(PHP_SAPI !== 'cli'){
-			return new $commands;
-		}
-
 		foreach ($this->controllers as $controller) {
             if (!($controller instanceof Controller)) {
 				$commands = array_merge($commands, $controller->flushCommands(

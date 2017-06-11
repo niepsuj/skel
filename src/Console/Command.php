@@ -1,6 +1,6 @@
 <?php
 
-namespace Skel;
+namespace Skel\Console;
 
 use Symfony\Component\Console\Command\Command as BaseCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * $command = new ConsoleCommand('<comand name> -no-value-option|alias {argument}');
  * $command->setCode(function(<args>){});
  */
-class ConsoleCommand extends BaseCommand
+class Command extends BaseCommand
 {
 
     /**
@@ -47,7 +47,7 @@ class ConsoleCommand extends BaseCommand
      *   - name - nazwa akcji
      *   - option1 - dodanie jednego myślnika (-) definiuje opcję bez wartości (flagę)
      *   - option2 - dodanie po nazwie opcji pipe'a (|) definiuje jednoliterowy alias
-     *   - option3 - dodanie dwuch myślników (--) definiuje opcję która może posiadać wartość
+     *   - option3 - dodanie dwóch myślników (--) definiuje opcję która może posiadać wartość
      *   - option4 - dodanie nawiasów kwadratowych ([]) definiuje że opcja może być użyta wielokrotnie a wartości przekazywane są jako tablica
      *   - argument1 - argument wywołania
      *   - argument2 - ostatni argument jeśli ma nawiasy kwadratowe ([]) zbierać będzie wszystkie pozostałe argumenty (nienazwane w definicji) i przekazywać jako tablica
@@ -58,75 +58,72 @@ class ConsoleCommand extends BaseCommand
      */
     public function __construct($definition)
     {
-        if(PHP_SAPI === 'cli') {
+        $matches = [];
 
-            $matches = [];
+        // Wyłuskanie nazwy akcji
+        $base = preg_match(self::DEF_BASE, $definition, $matches);
+        if (!isset($matches['command']))
+            throw new \Exception('Nieprawidłowa definicja komendy: <command :argument -options|o>');
 
-            // Wyłuskanie nazwy akcji
-            $base = preg_match(self::DEF_BASE, $definition, $matches);
-            if (!isset($matches['command']))
-                throw new \Exception('Nieprawidłowa definicja komendy: <command :argument -options|o>');
+        // Konfiguracja klasy Symfony
+        parent::__construct($matches['command']);
 
-            // Konfiguracja klasy Symfony
-            parent::__construct($matches['command']);
+        // Parsowanie pozostałej części definicji
+        if (!empty($matches['input'])) {
+            $input = $matches['input'];
 
-            // Parsowanie pozostałej części definicji
-            if (!empty($matches['input'])) {
-                $input = $matches['input'];
+            /**
+             * Parsowanie argumentów
+             */
+            preg_match_all(self::DEF_ARGS, $input, $matches);
+            if (!empty($matches['arguments'])) {
+                foreach ($matches['arguments'] as $i => $name) {
 
-                /**
-                 * Parsowanie argumentów
-                 */
-                preg_match_all(self::DEF_ARGS, $input, $matches);
-                if (!empty($matches['arguments'])) {
-                    foreach ($matches['arguments'] as $i => $name) {
-
-                        if ($matches['array'][$i] == '[]') {
-                            $mode = InputArgument::REQUIRED | InputArgument::IS_ARRAY;
-                        } else {
-                            $mode = InputArgument::REQUIRED;
-                        }
-
-                        $this->definitions[$name] = array(
-                            'mode' => $mode,
-                            'description' => null,
-                            'default' => null
-                        );
+                    if ($matches['array'][$i] == '[]') {
+                        $mode = InputArgument::REQUIRED | InputArgument::IS_ARRAY;
+                    } else {
+                        $mode = InputArgument::REQUIRED;
                     }
+
+                    $this->definitions[$name] = array(
+                        'mode' => $mode,
+                        'description' => null,
+                        'default' => null
+                    );
                 }
+            }
 
-                /**
-                 * Parsowanie opcji
-                 */
-                preg_match_all(self::DEF_OPTS, $input, $matches);
-                if (!empty($matches['options'])) {
+            /**
+             * Parsowanie opcji
+             */
+            preg_match_all(self::DEF_OPTS, $input, $matches);
+            if (!empty($matches['options'])) {
 
-                    foreach ($matches['options'] as $i => $name) {
-                        @list($name, $shortcut) = explode('|', $name);
+                foreach ($matches['options'] as $i => $name) {
+                    @list($name, $shortcut) = explode('|', $name);
 
-                        if ($matches['value'][$i] == '-') {
-                            $mode = InputOption::VALUE_NONE;
+                    if ($matches['value'][$i] == '-') {
+                        $mode = InputOption::VALUE_NONE;
 
-                            if (strlen($name) == 1 && null === $shortcut) {
-                                $shortcut = $name;
-                                $name = $name . '-flag';
-                            }
-
-                        } else {
-                            if ($matches['array'][$i] == '[]') {
-                                $mode = InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY;
-                            } else {
-                                $mode = InputOption::VALUE_REQUIRED;
-                            }
+                        if (strlen($name) == 1 && null === $shortcut) {
+                            $shortcut = $name;
+                            $name = $name . '-flag';
                         }
 
-                        $this->definitions[$name] = array(
-                            'mode' => $mode,
-                            'shortcut' => $shortcut,
-                            'description' => null,
-                            'default' => null
-                        );
+                    } else {
+                        if ($matches['array'][$i] == '[]') {
+                            $mode = InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY;
+                        } else {
+                            $mode = InputOption::VALUE_REQUIRED;
+                        }
                     }
+
+                    $this->definitions[$name] = array(
+                        'mode' => $mode,
+                        'shortcut' => $shortcut,
+                        'description' => null,
+                        'default' => null
+                    );
                 }
             }
         }
@@ -154,7 +151,7 @@ class ConsoleCommand extends BaseCommand
     }
 
     /**
-     * Dodaje opsi argumentu lub opcji, przydatne do help'a
+     * Dodaje opis argumentu lub opcji, przydatne do help'a
      * 
      * @param string $name
      * @param string $value
