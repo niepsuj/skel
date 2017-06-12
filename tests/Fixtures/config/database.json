@@ -1,0 +1,8 @@
+{
+  "driver": 	  "pdo_mysql",
+  "host": 	      "localhost",
+  "dbname": 	  "skel_lab",
+  "user": 	      "skel_lab",
+  "password":     "skel_lab",
+  "charset": 	  "utf8mb4"
+}

@@ -15,9 +15,10 @@ use Doctrine\ORM\Tools\Console\ConsoleRunner as ORMConsoleRunner;
 use Entity\Tool\DispatcherInterface;
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
-use Provider\Orm\RepositoryEvent;
-use Provider\Orm\RepositoryService;
 use Silex\Application;
+use Skel\Event\ConsoleApplicationEvent;
+use Skel\Event\OrmRepositoryEvent;
+use Skel\Orm\RepositoryService;
 use Symfony\Component\Validator\Mapping\Factory\LazyLoadingMetadataFactory;
 use Symfony\Component\Validator\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Validator\Mapping\Loader\LoaderChain;
@@ -27,20 +28,24 @@ class OrmProvider implements ServiceProviderInterface
 {
     public function register(Container $pimple)
     {
-        $pimple['tmp.path'] = function(){
-
-        };
-
         if(!isset($pimple['tmp.path'])){
             throw new \Exception('Missing tmp.path');
         }
 
         if(!isset($pimple['vendor.path'])){
-            $pimple['vendor.path'] = __DIR__.'/../../../vendor';
+            throw new \Exception('Missing vendor.path');
         }
 
         if(!isset($pimple['src.path'])){
-            $pimple['src.path'] = __DIR__ .'/..';
+            throw new \Exception('Missing src.path');
+        }
+
+        if(!isset($pimple['loader'])){
+            throw new \Exception(
+                'Missing composer loader object '.PHP_EOL.
+                        '$loader = require_once \'vendor/autoload.php\';'.PHP_EOL.
+                        '$app = new Application([\'loader\' => $loader])'
+            );
         }
 
         AnnotationRegistry::registerAutoloadNamespace(
@@ -71,84 +76,98 @@ class OrmProvider implements ServiceProviderInterface
         }
 
         if(!isset($pimple['orm.entity.paths'])){
-            $pimple['orm.entity.paths'] = [
-                $pimple['src.path'].'/Entity'
-            ];
+            $pimple['orm.entity.paths'] = function($app){
+                return new \ArrayObject([
+                    $app['src.path'].'/Entity'
+                ]);
+            };
         }
 
-        $pimple['orm.proxy'] = function() use ($pimple){
-            return $pimple['tmp.path'] . '/orm/'.$pimple['orm.proxy.namespace'];
+        $pimple['orm.proxy'] = function($app){
+            return $app['tmp.path'] . '/orm/'.$app['orm.proxy.namespace'];
         };
 
         $pimple['orm.cache'] = function(){
             return new Cache();
         };
 
-        $pimple['orm.reader'] = function() use ($pimple){
-            AnnotationRegistry::registerLoader([$pimple['loader'], 'loadClass']);
+        $pimple['orm.reader'] = function($app){
+            AnnotationRegistry::registerLoader([$app['loader'], 'loadClass']);
             return new AnnotationReader();
         };
 
-        $pimple['orm.driver'] = function() use ($pimple){
+        $pimple['orm.driver'] = function($app){
             return new AnnotationDriver(
-                $pimple['orm.reader'],
-                $pimple['orm.entity.paths']
+                $app['orm.reader'],
+                (array) $app['orm.entity.paths']
             );
         };
 
-        $pimple['validator.mapping.class_metadata_factory'] = function () use ($pimple) {
+        $pimple['validator.mapping.class_metadata_factory'] = function ($app){
             return new LazyLoadingMetadataFactory(
                 new LoaderChain([
-                    new AnnotationLoader($pimple['orm.reader']),
+                    new AnnotationLoader($app['orm.reader']),
                     new StaticMethodLoader()
                 ])
             );
         };
 
-        $pimple['orm.config'] = function() use ($pimple){
+        $pimple['orm.config'] = function($app){
             $config = new Configuration();
-            $config->setQueryCacheImpl($pimple['orm.cache']);
-            $config->setProxyDir($pimple['orm.proxy']);
-            $config->setProxyNamespace($pimple['orm.proxy.namespace']);
+            $config->setQueryCacheImpl($app['orm.cache']);
+            $config->setProxyDir($app['orm.proxy']);
+            $config->setProxyNamespace($app['orm.proxy.namespace']);
             $config->setAutoGenerateProxyClasses(true);
-            $config->setMetadataCacheImpl($pimple['orm.cache']);
-            $config->setMetadataDriverImpl($pimple['orm.driver']);
+            $config->setMetadataCacheImpl($app['orm.cache']);
+            $config->setMetadataDriverImpl($app['orm.driver']);
 
             return $config;
         };
 
-        $pimple['em'] = function() use ($pimple){
+        $pimple['em'] = function($app){
             return EntityManager::create(
-                $pimple['dbs'][$pimple['orm.connection']],
-                $pimple['orm.config']
+                $app['dbs'][$app['orm.connection']],
+                $app['orm.config']
             );
         };
 
-        $pimple['er'] = function() use ($pimple){
-            return new RepositoryService($pimple['em'], $pimple['dispatcher']);
+        $pimple['er'] = function($app){
+            return new RepositoryService($app['em'], $app['dispatcher']);
         };
 
         /**
          * @var Application $pimple
          */
-        $pimple->on('console.app', function($event) use ($pimple){
-            $event['app']->setCatchExceptions(true);
-            $event['app']->getHelperSet()
-                ->set(new EntityManagerHelper($pimple['em']), 'em');
-            $event['app']->getHelperSet()
-                ->set(new ConnectionHelper($pimple['em']->getConnection()), 'conn');
+        $pimple->on(ProjectEvents::CONSOLE_APPLICATION,
+            function(ConsoleApplicationEvent $event) use ($pimple){
+                $event
+                    ->getApplication()
+                    ->setCatchExceptions(true);
 
-            DBALConsoleRunner::addCommands($event['app']);
-            ORMConsoleRunner::addCommands($event['app']);
+                $event
+                    ->getApplication()
+                    ->getHelperSet()
+                    ->set(new EntityManagerHelper($pimple['em']), 'em');
 
-            return $event;
-        });
+                $event
+                    ->getApplication()
+                    ->getHelperSet()
+                    ->set(new ConnectionHelper($pimple['em']->getConnection()), 'conn');
 
-        $pimple->on('get.repository', function(RepositoryEvent $event) use ($pimple){
-            $repository = $event->getRepository();
-            if($repository instanceof DispatcherInterface){
-                $repository->setDispatcher($pimple['dispatcher']);
+                DBALConsoleRunner::addCommands($event->getApplication());
+                ORMConsoleRunner::addCommands($event->getApplication());
+
+                return $event;
             }
-        });
+        );
+
+        $pimple->on( ProjectEvents::ORM_GET_REPOSITORY,
+            function(OrmRepositoryEvent $event) use ($pimple){
+                $repository = $event->getRepository();
+                if($repository instanceof DispatcherInterface){
+                    $repository->setDispatcher($pimple['dispatcher']);
+                }
+            }
+        );
     }
 }
