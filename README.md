@@ -1,14 +1,87 @@
-## Config
+## Providers
 
-```php
+### ProjectProvider
 
-$app = new Silex\Application([
-    'env' => 'production',
-    'root.path' => __DIR__
-]);
+@todo
 
-$app->register(Skel\ConfigProvider, [
-    ''
-]);
+### ConfigProvider
+
+@todo
+
+### CacheProvider
+
+@todo
+
+### ViewProvider
+
+@todo
+
+### ConsoleProvider
+
+@todo
+
+### MongoProvider
+
+@todo
+
+### OrmProvider
+
+@todo
+
+## Setup
+
+@todo
+
+### Environment
+
+#### nginx
+
+@todo
+
+#### CLI 
+
+@todo
+
+### Directory layout
 
 ```
+ * my_project
+    * config
+        * database.json
+        * database.dev.json
+        * database.stage.json
+    * log
+    * public
+        * index.php
+    * src
+        * Entity
+            * News.php
+        * Application.php
+    * tmp
+    * view
+        * index.twig
+    * composer.json
+```
+### composer.json
+
+@todo
+
+### Configuration
+
+@todo
+
+### Application.php
+
+@todo
+
+### News.php
+
+@todo
+
+### index.twig
+
+@todo
+
+### index.php
+
+@todo
