@@ -1,6 +1,7 @@
 {
 	"name": "niepsuj/skel",
 	"description": "silex tools",
+	"license": "MIT",
 	"autoload": {
         "psr-4": { "Skel\\": "src" }
     },

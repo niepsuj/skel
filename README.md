@@ -1,33 +1,3 @@
-## Providers
-
-### ProjectProvider
-
-@todo
-
-### ConfigProvider
-
-@todo
-
-### CacheProvider
-
-@todo
-
-### ViewProvider
-
-@todo
-
-### ConsoleProvider
-
-@todo
-
-### MongoProvider
-
-@todo
-
-### OrmProvider
-
-@todo
-
 ## Setup
 
 @todo
@@ -83,5 +53,35 @@
 @todo
 
 ### index.php
+
+@todo
+
+## Providers
+
+### ProjectProvider
+
+@todo
+
+### ConfigProvider
+
+@todo
+
+### CacheProvider
+
+@todo
+
+### ViewProvider
+
+@todo
+
+### ConsoleProvider
+
+@todo
+
+### MongoProvider
+
+@todo
+
+### OrmProvider
 
 @todo
