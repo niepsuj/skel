@@ -62,7 +62,9 @@ class ConfigProvider implements ServiceProviderInterface
 
         /** @var Application $pimple */
         $pimple->on(KernelEvents::TERMINATE, function() use ($pimple){
-            $pimple['config.cache']->save();
+            if($pimple['config.cache'] instanceof Cache){
+                $pimple['config.cache']->save();
+            }
         });
 
         if(isset($pimple['cleanup.scope'])){
