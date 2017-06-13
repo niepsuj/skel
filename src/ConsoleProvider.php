@@ -39,6 +39,7 @@ class ConsoleProvider implements ServiceProviderInterface, BootableProviderInter
 		$app['controllers_factory'] = $app->factory(function ($app) {
 		    return new ControllerCollection(
                 $app['route_factory'],
+                $app['callback_resolver'],
                 $app['routes_factory'],
                 function($definition) use ($app){
                     $commandClass = $app['command_class'];

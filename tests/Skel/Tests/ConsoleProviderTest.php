@@ -92,6 +92,25 @@ class ConsoleProviderTest extends TestCase
         $this->assertEquals('cleanup', $command->getName());
         $this->assertContains('config', $command->getHelp());
     }
+
+    public function testCommandCallbackResolver()
+    {
+        $app = new ConsoleTestApplication();
+        $app['test'] = function(){
+            return new ConsoleTestService();
+        };
+
+        $app->command('test', 'test:test');
+
+        $app->boot();
+        $app['console.app']->addCommands(
+            $app['controllers']->flushCommands()
+        );
+
+        $command = $app['console.app']->find('test');
+        $this->assertTrue($command instanceof Command);
+        $this->assertEquals('test', $command->getName());
+    }
 }
 
 class  ConsoleTestApplication extends Application
@@ -105,5 +124,15 @@ class  ConsoleTestApplication extends Application
             'version' => 1
         ]);
         $this->register(new ConsoleProvider);
+
+
+    }
+}
+
+class  ConsoleTestService extends Application
+{
+    public function test()
+    {
+
     }
 }
