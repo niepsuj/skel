@@ -26,7 +26,7 @@ class CacheProvider implements ServiceProviderInterface
 
             return $app['name'];
         };
-        $pimple['cache.lifetime'] = 0;
+        $pimple['cache.lifetime'] = 60;
         $pimple['cache.version'] = function($app){
             if(!isset($app['version'])){
                 throw new \Exception('Missing application version <$app[\'version\']>');

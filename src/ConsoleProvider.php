@@ -49,10 +49,7 @@ class ConsoleProvider implements ServiceProviderInterface, BootableProviderInter
         });
 
 		$app['console'] = function($app){
-			return new Helper(
-				$app['console.input'],
-				$app['console.output']
-			);
+			return new Helper();
 		};
 	}
 

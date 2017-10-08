@@ -2,7 +2,7 @@
 
 namespace Skel\Event;
 
-use MongoDB\Database;
+use Doctrine\MongoDB\Database;
 use Symfony\Component\EventDispatcher\Event as BaseEvent;
 
 class MongoDBEvent extends BaseEvent

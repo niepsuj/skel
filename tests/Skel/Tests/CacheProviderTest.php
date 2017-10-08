@@ -32,9 +32,9 @@ class CacheProviderTest extends TestCase
 
         $test = $app['cache']->getItem('test');
         $test->set('test value');
-
+        $saveResult = $app['cache']->save($test);
         $this->assertTrue(
-            $app['cache']->save($test),
+            $saveResult,
             'Should return true while save'
         );
     }
