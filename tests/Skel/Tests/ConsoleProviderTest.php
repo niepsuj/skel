@@ -6,12 +6,14 @@ use PHPUnit\Framework\TestCase;
 use Silex\Application;
 use Skel\Application\ConsoleTrait;
 use Skel\ConfigProvider;
+use Skel\Console\ApplicationHelper;
 use Skel\Console\Command;
 use Skel\Console\ControllerCollection;
 use Skel\Console\Helper;
 use Skel\ConsoleProvider;
 use Skel\ProjectProvider;
 use Symfony\Component\Console\Application as ConsoleApplication;
+use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -110,6 +112,30 @@ class ConsoleProviderTest extends TestCase
         $command = $app['console.app']->find('test');
         $this->assertTrue($command instanceof Command);
         $this->assertEquals('test', $command->getName());
+    }
+
+    public function testApplicationHelper()
+    {
+        $app = new ConsoleTestApplication();
+        $app->boot();
+
+        /** @var HelperSet $helperSet */
+        $helperSet = $app['console.app']->getHelperSet();
+
+        $this->assertTrue($helperSet->has('application'), 'Has application helper in console helperset');
+        $this->assertTrue(
+            $helperSet->get('application') instanceof ApplicationHelper);
+
+        $this->assertTrue($helperSet->has('app'), 'Has app alias to application helper in console helperset');
+
+        /** @var ApplicationHelper $helper */
+        $helper = $helperSet->get('app');
+        $this->assertTrue($helper instanceof ApplicationHelper);
+        $this->assertTrue($helper->getApplication() instanceof ConsoleTestApplication);
+
+        $this->assertEquals($app['version'], $helper['version']);
+        $helper['test_key'] = 1;
+        $this->assertEquals($app['test_key'], $helper['test_key']);
     }
 }
 

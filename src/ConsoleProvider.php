@@ -5,6 +5,7 @@ namespace Skel;
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
 use Silex\Api\BootableProviderInterface;
+use Skel\Console\ApplicationHelper;
 use Skel\Console\ControllerCollection;
 use Skel\Console\Helper;
 use Skel\Event\CleanupEvent;
@@ -21,7 +22,7 @@ class ConsoleProvider implements ServiceProviderInterface, BootableProviderInter
 	        throw new \Exception('Missing application name or/and version');
         }
 
-		$app['console.env'] = PHP_SAPI === 'cli';
+        $app['console.env'] = PHP_SAPI === 'cli';
 		$app['console.app'] = function($app){
 			$cliApp = new Application(
 			    $app['name'],
@@ -51,6 +52,15 @@ class ConsoleProvider implements ServiceProviderInterface, BootableProviderInter
 		$app['console'] = function($app){
 			return new Helper();
 		};
+
+        /** @var \Silex\Application $app */
+		$app->on(ProjectEvents::CONSOLE_APPLICATION,
+            function(ConsoleApplicationEvent $event) use ($app){
+                $event->getApplication()
+                    ->getHelperSet()
+                    ->set(new ApplicationHelper($app), 'app');
+            }
+        );
 	}
 
     public function boot(\Silex\Application $app)
